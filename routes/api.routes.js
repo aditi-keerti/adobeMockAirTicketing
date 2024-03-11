@@ -1,6 +1,7 @@
 const express=require('express');
 const {UserModel}=require('../modals/user.model');
 const {FlightModel}=require('../modals/flight.model');
+const {BookingModel}=require('../modals/booking.model');
 const {auth}=require('../controllers/auth.middleware');
 const bcrypt=require('bcrypt');
 const jwt=require('jsonwebtoken');
@@ -111,5 +112,19 @@ api.delete('flights/:id',async(req,res)=>{
     }
   })
 
-
+api.post('/bookings',auth,async(req,res)=>{
+    const {flightId}=req.body;
+    const userId=req.user.userId;
+    try{
+        const flight=await FlightModel.findById(flightId);
+        if(flight){
+            const newbooking=new BookingModel({userId:userId,flightId})
+            await newbooking.save();
+            res.status(200).json({mesg:"Booking done"});
+        }
+    }
+    catch(err){
+        res.status(500).json({err:"Internal Server error"});
+    }
+})
 module.exports={api};
