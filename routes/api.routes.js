@@ -1,8 +1,11 @@
 const express=require('express');
 const {UserModel}=require('../modals/user.model');
 const {FlightModel}=require('../modals/flight.model');
-const bcrypt=require('bcrypt')
+const {auth}=require('../controllers/auth.middleware');
+const bcrypt=require('bcrypt');
+const jwt=require('jsonwebtoken');
 const api=express.Router();
+api.use(express.json());
 
 api.post('/register',async(req,res)=>{
    const {name,email,password}=req.body;
@@ -11,9 +14,16 @@ api.post('/register',async(req,res)=>{
     if(existingUser){
         return res.status(400).json({error:"Email already registered.Please Login!!"})
     }
-    const hashedPass=await bcrypt.hash(password,5);
-    await UserModel.create({name,email,password:hashedPass});
-    res.status(201).json({mesg:"User registered Succesfully"});
+   bcrypt.hash(password,5,async(err,hash)=>{
+    if(err){
+        res.status(401).send({mesg:"Error mesg"})
+    }else{
+        const user=new UserModel({name,email,password:hash})
+        await user.save();
+        res.status(201).json({mesg:"User registered Succesfully"});
+    }
+   })
+   
    }catch(err){
     res.status(500).json({err});
    }
@@ -25,12 +35,17 @@ api.post('/login',async(req,res)=>{
         if(!user){
             return res.status(401).json({error:"Invalid email"})
         }
-        const passwordMatch=await bcrypt.compare(password,user.password);
-        if(!passwordMatch){
-            return res.status(401).json({err:"Invalid password"});
-        }
-        const token =jwt.sign({email},'masai');
-        res.status(200).json({token});
+        bcrypt.compare(password,user.password,(err,pass)=>{
+            if(err){
+                res.status(400).json({err});
+            }if(pass){
+                const token =jwt.sign({userId:user._id},'masai');
+                res.status(200).json({mesg:"Login succesfull",loginUser:user.name,token});
+            }
+        });
+        
+       
+       
     }catch(err){
         res.status(500).json(err);
     }
@@ -48,6 +63,16 @@ api.get('/flights',async(req,res)=>{
  }
 })
 
+api.post('/flights',auth,async(req,res)=>{
+  const payload=req.body;
+  try{
+    const flight=new FlightModel({payload});
+    await flight.save();
+    res.status(200).json({mesg:`Flight ${flight} is addded`});
+  }catch(err){
+    res.status(400).json(err);  
+  }
+})
 api.get('flights/:id',async(req,res)=>{
     const flightId=req.params.id;
     try{
@@ -86,4 +111,5 @@ api.delete('flights/:id',async(req,res)=>{
     }
   })
 
-  
+
+module.exports={api};

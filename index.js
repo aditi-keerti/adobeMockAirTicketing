@@ -1,11 +1,13 @@
 const express=require("express");
 const {connection}=require('./db');
+const {api}=require('./routes/api.routes')
 
 const app=express();
-
+app.use(express.json());
 app.get('/',(req,res)=>{
     res.send("Home Page")
 })
+app.use('/api',api);
 app.listen(8080,async()=>{
     try{
         await connection;
