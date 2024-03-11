@@ -41,7 +41,7 @@ api.post('/login',async(req,res)=>{
                 res.status(400).json({err});
             }if(pass){
                 const token =jwt.sign({userId:user._id},'masai');
-                res.status(200).json({mesg:"Login succesfull",loginUser:user.name,token});
+                res.status(201).json({mesg:"Login succesfull",loginUser:user.name,token});
             }
         });
         
@@ -69,7 +69,7 @@ api.post('/flights',auth,async(req,res)=>{
   try{
     const flight=new FlightModel({payload});
     await flight.save();
-    res.status(200).json({mesg:`Flight ${flight} is addded`});
+    res.status(201).json({mesg:`Flight ${flight} is addded`});
   }catch(err){
     res.status(400).json(err);  
   }
@@ -95,7 +95,7 @@ api.patch('flights/:id',async(req,res)=>{
     if(!flight){
         return res.status(404).json({err:"Flight Not Found"});
     }
-    res.status(200).json(flight);
+    res.status(204).json(flight);
   }catch(err){
     res.status(500).json({err:"Internal Server error"});
   }
@@ -106,7 +106,7 @@ api.delete('flights/:id',async(req,res)=>{
     try{
       await FlightModel.findByIdAndDelete(flightId,updatedData,{new:true});
      
-      res.status(200).json({msg:"Flight deleted"});
+      res.status(202).json({msg:"Flight deleted"});
     }catch(err){
       res.status(500).json({err:"Internal Server error"});
     }
@@ -126,5 +126,35 @@ api.post('/bookings',auth,async(req,res)=>{
     catch(err){
         res.status(500).json({err:"Internal Server error"});
     }
+})
+api.get('/dashboard',auth,async(req,res)=>{
+    try{
+        const userId=req.user.userId;
+        const details= await BookingModel.find({userId});
+        res.status(200).json(details);
+    }
+     catch(err){
+        res.status(500).json({err:"Internal Server error"});
+    }
+})
+api.patch('/dashboard/:id',async(req,res)=>{
+    const userId=req.params.id;
+  const updatedData=req.body;
+  try{
+    const details=await BookingModel.findByIdAndUpdate(userId,updatedData,{new:true});
+   
+    res.status(204).json(details);
+  }catch(err){
+    res.status(500).json({err:"Internal Server error"});
+  }
+})
+api.delete('/dashboard/:id',async(req,res)=>{
+    const userId=req.params.id;
+  try{
+    await BookingModel.findByIdAndDelete(userId,updatedData,{new:true});
+    res.status(202).json({mesg:"Detail deleted"});
+  }catch(err){
+    res.status(500).json({err:"Internal Server error"});
+  }
 })
 module.exports={api};

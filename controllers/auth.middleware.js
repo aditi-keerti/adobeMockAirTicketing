@@ -6,8 +6,8 @@ const auth=async(req,res,next)=>{
         try{
             const decoded=jwt.verify(token,"masai");
             if(decoded){
-                req.body.userId=decoded.userId;
-                req.body.name=decoded.user;
+                req.body.userId=decoded._id;
+                req.body.name=decoded.name;
                 next();
             }else{
                 res.json({mesg:"User not Authorised"});
